@@ -361,7 +361,7 @@ ATPG::wptr ATPG::get_faulty_wire(const fptr f, int &fault_type) {
        * f can't propagate, and you sould set (is_faulty) to false
        */
       for (i = 0; i < nin; i++) {
-        if (f->node->iwire[i] != sort_wlist[f->to_swlist]) { // f_value != g_value
+        if (f->node->iwire[i] != sort_wlist[f->to_swlist]) { // fanin that not the faulty wire
           if (f->node->iwire[i]->value == 0 || f->node->iwire[i]->value == 2) { // If any input is zero or unknown, fault f can't propagate
             is_faulty = false;
           }
@@ -383,7 +383,7 @@ ATPG::wptr ATPG::get_faulty_wire(const fptr f, int &fault_type) {
        * f can't propagate, and you sould set (is_faulty) to false
        */
       for (i = 0; i < nin; i++) {
-        if (f->node->iwire[i] != sort_wlist[f->to_swlist]) { // f_value != g_value
+        if (f->node->iwire[i] != sort_wlist[f->to_swlist]) { // fanin that not the faulty wire
           if (f->node->iwire[i]->value == 0 || f->node->iwire[i]->value == 2) { // If any input is zero or unknown, fault f can't propagate
             is_faulty = false;
           }
@@ -402,7 +402,7 @@ ATPG::wptr ATPG::get_faulty_wire(const fptr f, int &fault_type) {
        * f can't propagate, and you sould set (is_faulty) to false
        */
       for (i = 0; i < nin; i++) {
-        if (f->node->iwire[i] != sort_wlist[f->to_swlist]) { // f_value != g_value
+        if (f->node->iwire[i] != sort_wlist[f->to_swlist]) { // fanin that not the faulty wire
           if (f->node->iwire[i]->value == 1 || f->node->iwire[i]->value == 2) { // If any input is one or unknown, fault f can't propagate
             is_faulty = false;
           }
@@ -421,7 +421,7 @@ ATPG::wptr ATPG::get_faulty_wire(const fptr f, int &fault_type) {
        * f can't propagate, and you sould set (is_faulty) to false
        */
       for (i = 0; i < nin; i++) {
-        if (f->node->iwire[i] != sort_wlist[f->to_swlist]) { // f_value != g_value
+        if (f->node->iwire[i] != sort_wlist[f->to_swlist]) { // fanin that not the faulty wire
           if (f->node->iwire[i]->value == 1 || f->node->iwire[i]->value == 2) { // If any input is one or unknown, fault f can't propagate
             is_faulty = false;
           }
