@@ -23,6 +23,7 @@ void ATPG::fault_simulate_vectors(int &total_detect_num) {
 
   /* for every vector */
   for (i = vectors.size() - 1; i >= 0; i--) {
+    // cout << "fault_sim a vector(" << vectors[i] << "):\n";
     fault_sim_a_vector(vectors[i], current_detect_num);
     total_detect_num += current_detect_num;
     fprintf(stdout, "vector[%d] detects %d faults (%d)\n", i, current_detect_num, total_detect_num);
@@ -204,15 +205,32 @@ void ATPG::fault_sim_a_vector(const string &vec, int &num_of_current_detect) {
         w->remove_fault_injected();
         w->set_fault_free();
         /*TODO*/
-
         /*
          * After simulation is done,if wire is_output(), we should compare good value(wire_value_g) and faulty value(wire_value_f). 
          * If these two values are different and they are not unknown, then the fault is detected.  We should update the simulated_fault_list.  Set detect to true if they are different.
          * Since we use two-bit logic to simulate circuit, you can use Mask[] to perform bit-wise operation to get value of a specific bit.
          * After that, don't forget to reset faulty values (wire_value_f) to their fault-free values (wire_value_g).
          */
-        
+        // 1.1. if wire is_output()
+        if(w->is_output()){
+          // 1.2. we should compare good value(wire_value_g) and faulty value(wire_value_f)
+          int detected = w->wire_value_g ^ w->wire_value_f;
+          for(int f_idx=0; f_idx<num_of_fault; ++f_idx){ // for each faults
+            // 2. If these two values are different and they are not unknown, then the fault is detected. Since we use two-bit logic to simulate circuit, you can use Mask[] to perform bit-wise operation to get value of a specific bit.
+            // if((Mask[f_idx] & detected != 0) && (w->wire_value_g & Mask[f_idx] != Unknown[f_idx]) && (w->wire_value_f & Mask[f_idx] != Unknown[f_idx])){ // the bits are faults and are detected. And wire_value_g and wire_value_g are not unknown.
+            if(((Mask[f_idx] & detected) != 0) && ((w->wire_value_g & Mask[f_idx]) != Unknown[f_idx]) && ((w->wire_value_f & Mask[f_idx]) != Unknown[f_idx])){ // the bits are faults and are detected. And wire_value_g and wire_value_g are not unknown.
+              simulated_fault_list[f_idx]->detect = TRUE;
+            }
+          }
+        }
+        // 4. After that, don't forget to reset faulty values (wire_value_f) to their fault-free values (wire_value_g)
+        w->wire_value_f = w->wire_value_g;
         /*end of TODO*/
+
+        // BONUS: N-detect, every fault should be detected N times before the fault is dropped
+
+        /*end of BONUS*/
+
       } // pop out all faulty wires
       num_of_fault = 0;  // reset the counter of faults in a packet
       start_wire_index = 10000;  //reset this index to a very large value.
@@ -332,7 +350,13 @@ ATPG::wptr ATPG::get_faulty_wire(const fptr f, int &fault_type) {
        * AND gate. You sould avoid checking the faultly input. If any input is zero or unknown, fault 
        * f can't propagate, and you sould set (is_faulty) to false
        */
-     
+      for (i = 0; i < nin; i++) {
+        if (f->node->iwire[i] != sort_wlist[f->to_swlist]) { // f_value != g_value
+          if (f->node->iwire[i]->value == 0 || f->node->iwire[i]->value == 2) { // If any input is zero or unknown, fault f can't propagate
+            is_faulty = false;
+          }
+        }
+      }
       /*end of TODO*/
       /* AND gate input stuck-at one/zero fault is propagated to
          AND gate output stuck-at one/zero fault */
@@ -348,7 +372,13 @@ ATPG::wptr ATPG::get_faulty_wire(const fptr f, int &fault_type) {
        * NAND gate. You sould avoid checking the faultly input. You sould figure out in which condition 
        * f can't propagate, and you sould set (is_faulty) to false
        */
-     
+      for (i = 0; i < nin; i++) {
+        if (f->node->iwire[i] != sort_wlist[f->to_swlist]) { // f_value != g_value
+          if (f->node->iwire[i]->value == 0 || f->node->iwire[i]->value == 2) { // If any input is zero or unknown, fault f can't propagate
+            is_faulty = false;
+          }
+        }
+      }
       /*end of TODO*/
       if (f->fault_type == 0)
         fault_type = STF;
@@ -361,7 +391,13 @@ ATPG::wptr ATPG::get_faulty_wire(const fptr f, int &fault_type) {
        * OR gate. You sould avoid checking the faultly input. You sould figure out in which condition 
        * f can't propagate, and you sould set (is_faulty) to false
        */
-     
+      for (i = 0; i < nin; i++) {
+        if (f->node->iwire[i] != sort_wlist[f->to_swlist]) { // f_value != g_value
+          if (f->node->iwire[i]->value == 1 || f->node->iwire[i]->value == 2) { // If any input is one or unknown, fault f can't propagate
+            is_faulty = false;
+          }
+        }
+      }
       /*end of TODO*/
       if (f->fault_type == 0)
         fault_type = STR;
@@ -374,7 +410,13 @@ ATPG::wptr ATPG::get_faulty_wire(const fptr f, int &fault_type) {
        * NOR gate. You sould avoid checking the faultly input. You sould figure out in which condition 
        * f can't propagate, and you sould set (is_faulty) to false
        */
-     
+      for (i = 0; i < nin; i++) {
+        if (f->node->iwire[i] != sort_wlist[f->to_swlist]) { // f_value != g_value
+          if (f->node->iwire[i]->value == 1 || f->node->iwire[i]->value == 2) { // If any input is one or unknown, fault f can't propagate
+            is_faulty = false;
+          }
+        }
+      }
       /*end of TODO*/
       if (f->fault_type == 0)
         fault_type = STF;
@@ -421,7 +463,16 @@ void ATPG::inject_fault_value(const wptr faulty_wire, const int &bit_position, c
   /* Use mask[] to perform bit operation to inject fault (STUCK1 or STUCK0) to the right position
    * Call inject_fault_at() to set the fault_flag of the injected bit position.
    */
-
+  // 1. Use mask[] to perform bit operation to inject fault (STUCK1 or STUCK0) to the right position
+  if(fault_type == STUCK0){ // SA0: use AND GATE with input 0 to simulate as stuck at '0'. (See ch5 p.21)
+    faulty_wire->wire_value_f = faulty_wire->wire_value_f & ~Mask[bit_position]; 
+  } else if(fault_type == STUCK1){ // SA0: use OR GATE with input 1 to simulate as stuck at '1'. (See ch5 p.21)
+    faulty_wire->wire_value_f = faulty_wire->wire_value_f | Mask[bit_position];
+  } else{
+    cout << "[Error] - Niether SA0 nor SA1.\n";
+  }
+  // 2. Call inject_fault_at() to set the fault_flag of the injected bit position.
+  faulty_wire->inject_fault_at(bit_position);
   /*end of TODO*/
 }/* end of inject_fault_value */
 

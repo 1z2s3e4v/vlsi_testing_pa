@@ -96,6 +96,7 @@ class ATPG {
 
   /* defined in atpg.cpp */
   void test();
+  void print_values();
 
 
  private:
