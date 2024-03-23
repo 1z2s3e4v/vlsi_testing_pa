@@ -104,7 +104,10 @@ void ATPG::fault_sim_a_vector(const string &vec, int &num_of_current_detect) {
        * the fault is detected */
       if ((f->node->type == OUTPUT) ||
           (f->io == GO && sort_wlist[f->to_swlist]->is_output())) {
-        f->detect = TRUE;
+        f->detected_time++; /// BONUS
+        if(f->detected_time >= detected_num){
+          f->detect = TRUE;
+        }
       } else {
 
         /* if f is an gate output fault */
@@ -145,7 +148,10 @@ void ATPG::fault_sim_a_vector(const string &vec, int &num_of_current_detect) {
 
             /* if the faulty_wire is a primary output, it is detected */
             if (faulty_wire->is_output()) {
-              f->detect = TRUE;
+              f->detected_time++; /// BONUS
+              if(f->detected_time >= detected_num){
+                f->detect = TRUE;
+              }
             } else {
               /* if faulty_wire is not already marked as faulty, mark it as faulty
                * and add the wire to the list of faulty wires. */
@@ -226,10 +232,14 @@ void ATPG::fault_sim_a_vector(const string &vec, int &num_of_current_detect) {
         // 4. After that, don't forget to reset faulty values (wire_value_f) to their fault-free values (wire_value_g)
         w->wire_value_f = w->wire_value_g;
         /*end of TODO*/
-
-        // BONUS: N-detect, every fault should be detected N times before the fault is dropped
-
-        /*end of BONUS*/
+        for(int f_idx=0; f_idx<num_of_fault; ++f_idx){ /// BONUS
+          if(simulated_fault_list[f_idx]->detect == TRUE){
+            simulated_fault_list[f_idx]->detected_time++;
+            if(simulated_fault_list[f_idx]->detected_time < detected_num){
+              simulated_fault_list[f_idx]->detect = FALSE;
+            }
+          }
+        }
 
       } // pop out all faulty wires
       num_of_fault = 0;  // reset the counter of faults in a packet
