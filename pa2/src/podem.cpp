@@ -61,6 +61,25 @@ int ATPG::podem(const fptr fault, int &current_backtracks) {
       // Hint: Refer to Fig. 7.5, 7.6, 7.7, 7.8
       // Hint: remember add 1 to no_of_backtracks when flipping last decision
       /* TODO*/
+      // 7.5: DECISION TREE EMPTY?
+      while(!decision_tree.empty() && wpi==nullptr){ // NO: GO 7.6, YES: EXIT(7.9)--UNTESTABLE FAULT
+        // 7.6: LAST NODE FLAGGED?
+        if(decision_tree.front()->is_all_assigned()){ // YES: GO 7.7, NO: GO 7.8
+          // 7.7: SET ASSOCIATED PI TO X. REMOVE LAST NODE
+          decision_tree.front()->value = U;
+          decision_tree.front()->set_changed();
+          decision_tree.front()->remove_all_assigned();
+          decision_tree.pop_front();
+        }
+        else{
+          // 7.8: MAKE ALTERNATIVE ASSIGNMENT ON ASSOCIATED PI. FLAG LAST NODE
+          decision_tree.front()->value ^= 1; // Flip last PI assignment when: 1. Fault not activated 2.  No propagation path to any output (ch7-p.78)
+          decision_tree.front()->set_changed();
+          decision_tree.front()->set_all_assigned();
+          no_of_backtracks++; // remember add 1 to no_of_backtracks when flipping last decision
+          wpi = decision_tree.front();
+        }
+      }
       
       /* end of TODO */
       if (wpi == nullptr) no_test = true; //decision tree empty,  Fig 7.9
@@ -352,7 +371,12 @@ ATPG::wptr ATPG::find_hardest_control(const nptr n) {
   // Hint: You should use level to find hardest control gate inputs. 
   // Note: that gate inputs are arranged by levels.
   /* TODO */ 
-  
+  for(int i=n->iwire.size()-1; i>=0; --i){ // from level high --> low
+    if(n->iwire[i]->value==U){ // value is unknown
+      return n->iwire[i];
+    }
+  }
+  return nullptr;
   /* end of TODO */
 }/* end of find_hardest_control */
 
@@ -363,7 +387,13 @@ ATPG::wptr ATPG::find_easiest_control(const nptr n) {
   // Hint: You should use level to find hardest control gate inputs. 
   // Note: that gate inputs are arranged by levels.
   /* TODO */ 
-  
+  for(int i=0; i<n->iwire.size(); ++i){ // from level low --> high
+    if(n->iwire[i]->value==U){ // value is unknown
+      return n->iwire[i];
+    }
+  }
+  // printf("no control.\n");
+  return nullptr;
   /* end of TODO */
 }/* end of find_easiest_control */
 
@@ -406,6 +436,18 @@ bool ATPG::trace_unknown_path(const wptr w) {
   int i, nout;
   /* TODO search X-path*/
   //HINT if w is PO, return TRUE;  if not, check all its fanout.
+  if(w->is_output()){ // if w is PO, return TRUE
+    return true;
+  }
+  // w is not PO, check all its fanout.
+  for(int i=0; i< w->onode.size(); ++i){ // DFS for X-path
+    if(w->onode[i]->owire[0]->value==U){ // output is U (X-path)
+      if(trace_unknown_path(w->onode[i]->owire[0])){
+        return true; // X-PATH FROM GATE B TO A PO
+      }
+    }
+  }
+  return false;
   
   /* end of TODO */
 }/* end of trace_unknown_path */
